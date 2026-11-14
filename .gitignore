@@ -1,0 +1,46 @@
+__pycache__/
+*.py[cod]
+*.pyo
+
+.venv/
+venv/
+env/
+
+
+.env
+.env.*
+!.env.example
+
+.vscode/
+.idea/
+
+.DS_Store
+._*
+
+.ipynb_checkpoints/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Personalised Spotify dataset
+data/*.arff
+data/*.csv
+
+# Generated experiment results
+results/*.csv
+results/*.png
+results/*.pdf
+results/*.json
+
+# Temporary files
+*.log
+*.tmp
+*.bak
