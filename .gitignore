@@ -25,22 +25,17 @@ env/
 .coverage
 htmlcov/
 
-# Build artifacts
 build/
 dist/
 *.egg-info/
 
-# Personalised Spotify dataset
 data/*.arff
 data/*.csv
 
-# Generated experiment results
 results/*.csv
-results/*.png
 results/*.pdf
 results/*.json
 
-# Temporary files
 *.log
 *.tmp
 *.bak
