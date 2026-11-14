@@ -10,7 +10,7 @@ from sklearn.preprocessing import (
     LabelEncoder, MinMaxScaler, OneHotEncoder
 )
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.model_selection import StratifiedKFold
 from sklearn.base import clone
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
@@ -130,3 +130,54 @@ for name, pred in predictions.items():
     print(f"Model: \n{name}")
     print(classification_report(y, pred, target_names=class_names, zero_division=0))
 
+# Voting Ensemble
+
+model_list = list(models.keys())
+
+# Shape: n_models, n_samples, n_classes
+probs = np.stack([probabilities[name] for name in model_list], axis=0)
+votes = np.stack([
+    predictions[name] for name in model_list
+])
+
+# Majority voting
+majority_pred = []
+avg_probs = probs.mean(axis=0)
+for i in range(len(y)):
+    counts = np.bincount(votes[:, i], minlength=len(class_names))
+    candidates = np.flatnonzero(counts == counts.max())
+    winner = candidates[np.argmax(avg_probs[i, candidates])]
+    majority_pred.append(winner)
+
+majority_pred = np.array(majority_pred)
+
+# Average of probabilities
+avg_pred = np.argmax(avg_probs, axis=1)
+# Product of probabilities
+prod_probs = probs.prod(axis=0)
+prod_pred = np.argmax(prod_probs, axis=1)
+
+ensemble_results = {
+    "Majority Voting": majority_pred,
+    "Average Probabilities": avg_pred,
+    "Product of Probabilities": prod_pred
+}
+
+for name, pred in ensemble_results.items():
+    metrics = evaluate_model(y, pred)
+    result.append({
+        "Classifier": name,
+        **metrics
+    })
+    print(f"Ensemble Method: \n{name}")
+    print(classification_report(y, pred, target_names=class_names, zero_division=0))
+
+result_df = pd.DataFrame(result)
+result_df.to_csv(RESULT / "q1_1_results.csv", index=False)
+all_predictions = {**predictions, **ensemble_results}
+pd.DataFrame({
+    "Actual": y_raw.to_numpy(),
+    **{
+        name: encoder.inverse_transform(pred) for name, pred in all_predictions.items()
+    }
+}).to_csv(RESULT / "q1_1_predictions.csv", index=False)
