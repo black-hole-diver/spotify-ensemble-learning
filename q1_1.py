@@ -41,8 +41,15 @@ print("Missing values:\n", df.isnull().sum())
 
 encoder = LabelEncoder()
 X = df.drop(columns=["playlist_genre"])
-y = encoder.fit_transform(df["playlist_genre"])
-class_names = encoder.classes_
+y_raw = df["playlist_genre"]
+y_raw = y_raw.map(lambda x: x.decode("utf-8") if isinstance(x, bytes) else str(x))
+y = encoder.fit_transform(y_raw)
+class_names = [
+    str(name) for name in encoder.classes_
+]
+
+print("Class names:", class_names)
+print("Class types:", [type(x) for x in class_names])
 
 numeric_features = X.select_dtypes(include=[np.number]).columns.tolist()
 categorical_features = [ col for col in X.columns
@@ -67,7 +74,15 @@ preprocessor = ColumnTransformer([
 ])
 
 models = {
-    "NN": MLPClassifier(hidden_layer_sizes=(32,), max_iter=500, random_state=42),
+    "NN": MLPClassifier(
+        hidden_layer_sizes=(32,),
+        activation='relu',
+        solver='adam',
+        learning_rate_init=0.001,
+        early_stopping=True,
+        n_iter_no_change=20,
+        max_iter=2000,
+        random_state=42),
     "1-kNN": KNeighborsClassifier(n_neighbors=1),
     "Decision Tree": DecisionTreeClassifier(random_state=42)
 }
@@ -95,5 +110,23 @@ probabilities = {
     name: np.zeros((len(y), len(class_names))) for name in models
 }
 
+for train_index, test_index in CV.split(X, y):
+    X_train = X.iloc[train_index]
+    y_train = y[train_index]
+    X_test = X.iloc[test_index]
+    for name, pipeline in pipelines.items():
+        model = clone(pipeline)
+        model.fit(X_train, y_train)
+        predictions[name][test_index] = model.predict(X_test)
+        probabilities[name][test_index] = model.predict_proba(X_test)
 
+result = []
+for name, pred in predictions.items():
+    metrics = evaluate_model(y, pred)
+    result.append({
+        "Classifier": name,
+        **metrics
+    })
+    print(f"Model: \n{name}")
+    print(classification_report(y, pred, target_names=class_names, zero_division=0))
 
